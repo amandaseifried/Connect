@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d9488">
+<title>Connect</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫂</text></svg>">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --accent: #0d9488;
+    --accent-light: #2dd4bf;
+    --accent-glow: rgba(13, 148, 136, 0.22);
+    --green: #34d399;
+    --green-dark: #059669;
+    --yellow: #fbbf24;
+    --yellow-dark: #b45309;
+    --red: #f87171;
+    --red-dark: #dc2626;
+    --bg: #f8fffe;
+    --card: #ffffff;
+    --text: #134e4a;
+    --text-secondary: #6b7280;
+    --border: #d1fae5;
+    --fab-size: 58px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html, body { height: 100%; overscroll-behavior: none; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(135deg, #0d9488 0%, #0ea5a0 45%, #2dd4bf 100%);
+    padding: 20px 20px 0;
+    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    color: white;
+  }
+
+  .header-inner { display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+
+  .header-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    padding-bottom: 12px;
+  }
+
+  .header-tagline { font-size: 13px; opacity: 0.85; font-weight: 400; letter-spacing: 0.2px; }
+
+  .sync-indicator {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 8px;
+    opacity: 0.9;
+  }
+  .sync-indicator.syncing { background: rgba(255,255,255,0.2); color: white; }
+  .sync-indicator.synced { background: rgba(52, 211, 153, 0.3); color: white; }
+  .sync-indicator.error { background: rgba(248, 113, 113, 0.3); color: white; }
+
+  .filter-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 20px 14px;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+
+  .filter-tab {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1.5px solid rgba(255,255,255,0.35);
+    background: transparent;
+    color: rgba(255,255,255,0.85);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+    min-height: 34px;
+  }
+  .filter-tab.active { background: white; color: var(--accent); border-color: white; }
+
+  .stats-bar {
+    display: flex;
+    gap: 10px;
+    padding: 10px 16px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .stats-bar::-webkit-scrollbar { display: none; }
+
+  .stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg);
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-weight: 500;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .stat-chip strong { color: var(--accent); font-weight: 700; }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 32px;
+    color: var(--text-secondary);
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state p { font-size: 17px; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+  .empty-state .hint { font-size: 14px; font-weight: 400; color: var(--text-secondary); }
+
+  #people-list {
+    padding: 10px 12px;
+    padding-bottom: calc(88px + var(--safe-bottom));
+  }
+
+  .category-header {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-secondary);
+    padding: 14px 4px 6px;
+  }
+
+  /* Person cards */
+  .person-card {
+    background: var(--card);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(13, 148, 136, 0.07), 0 1px 2px rgba(0,0,0,0.04);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.2s;
+  }
+
+  .person-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    gap: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 72px;
+  }
+  .person-row:active { background: #f0fdf9; }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.green { background: var(--green); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15); }
+  .status-dot.yellow { background: var(--yellow); box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15); }
+  .status-dot.red { background: var(--red); box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15); }
+
+  .person-info { flex: 1; min-width: 0; }
+
+  .person-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .person-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+  }
+  .person-meta .overdue { color: var(--red-dark); font-weight: 600; }
+
+  .person-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+  }
+
+  .cat-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    display: inline-block;
+  }
+  .cat-family { background: rgba(225, 29, 72, 0.1); color: #be123c; }
+  .cat-friends { background: rgba(59, 130, 246, 0.1); color: #1d4ed8; }
+  .cat-work { background: rgba(245, 158, 11, 0.1); color: #b45309; }
+  .cat-other { background: rgba(107, 114, 128, 0.1); color: #374151; }
+
+  .connect-btn {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    min-height: 44px;
+    min-width: 44px;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s, opacity 0.15s;
+    box-shadow: 0 2px 8px var(--accent-glow);
+    white-space: nowrap;
+  }
+  .connect-btn:active { transform: scale(0.92); opacity: 0.85; }
+  .connect-btn.flash { animation: flash-connect 0.4s ease; }
+
+  @keyframes flash-connect {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.12); box-shadow: 0 4px 16px var(--accent-glow); }
+    100% { transform: scale(1); }
+  }
+
+  /* Expanded detail */
+  .person-detail {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 16px;
+    background: #f0fdfb;
+  }
+  .person-detail.open { display: block; }
+
+  .detail-actions { display: flex; gap: 8px; margin-bottom: 16px; }
+  .detail-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+    color: var(--text);
+    font-family: inherit;
+  }
+  .detail-btn.danger { color: var(--red-dark); border-color: #fca5a5; }
+
+  .detail-section-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  /* Notes */
+  .notes-area {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: white;
+    font-family: inherit;
+    color: var(--text);
+    resize: vertical;
+    min-height: 72px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    margin-bottom: 16px;
+  }
+  .notes-area:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .notes-saved {
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: -12px;
+    margin-bottom: 14px;
+    display: none;
+    font-weight: 500;
+  }
+  .notes-saved.show { display: block; }
+
+  /* History */
+  .history-list { list-style: none; }
+  .history-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-item:last-child { border-bottom: none; }
+
+  .history-emoji {
+    font-size: 18px;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+
+  .history-info { flex: 1; min-width: 0; }
+  .history-date { font-size: 13px; font-weight: 500; color: var(--text); }
+  .history-note-text { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  .history-delete {
+    background: none;
+    border: none;
+    color: var(--red);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 6px;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+
+  .no-history { font-size: 13px; color: var(--text-secondary); font-style: italic; }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: calc(24px + var(--safe-bottom));
+    right: 20px;
+    width: var(--fab-size);
+    height: var(--fab-size);
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    color: white;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 16px var(--accent-glow), 0 2px 6px rgba(0,0,0,0.1);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .fab:active { transform: scale(0.9); box-shadow: 0 2px 8px var(--accent-glow); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: calc(90px + var(--safe-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+  .toast-undo {
+    background: none;
+    border: none;
+    color: var(--accent-light);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 60, 56, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 500px;
+    padding: 28px 24px;
+    padding-bottom: calc(28px + var(--safe-bottom));
+    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal h2 { font-size: 20px; font-weight: 700; margin-bottom: 24px; color: var(--text); }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .optional { text-transform: none; font-weight: 400; font-size: 11px; }
+
+  .form-group input[type="text"],
+  .form-group input[type="date"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    appearance: none;
+    -webkit-appearance: none;
+    min-height: 48px;
+    font-family: inherit;
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  /* Connection type buttons */
+  .type-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .type-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+    font-family: inherit;
+    text-align: center;
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    line-height: 1.2;
+  }
+  .type-btn .type-emoji { font-size: 20px; }
+  .type-btn:active { transform: scale(0.96); }
+  .type-btn.selected {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    box-shadow: 0 2px 10px var(--accent-glow);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    min-height: 50px;
+    -webkit-tap-highlight-color: transparent;
+    font-family: inherit;
+    transition: transform 0.1s;
+  }
+  .modal-actions button:active { transform: scale(0.97); }
+
+  .btn-cancel { background: var(--bg); color: var(--text-secondary); border: 1.5px solid var(--border) !important; }
+  .btn-save {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    color: white;
+    box-shadow: 0 2px 10px var(--accent-glow);
+  }
+  .btn-save:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+  @media (min-width: 600px) {
+    #people-list { max-width: 540px; margin: 0 auto; padding: 16px; padding-bottom: 100px; }
+    .stats-bar { max-width: 564px; margin-left: auto; margin-right: auto; }
+    .modal { border-radius: 20px; margin-bottom: 40px; }
+    .modal-overlay { align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>Connect</h1>
+  </div>
+  <div class="header-bottom">
+    <p class="header-tagline">Stay close to the people who matter</p>
+    <span class="sync-indicator" id="sync-status"></span>
+  </div>
+  <div class="filter-bar" id="filter-bar"></div>
+</header>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<div id="people-list"></div>
+
+<button class="fab" id="fab-add" aria-label="Add person">+</button>
+
+<div class="toast" id="toast">
+  <span id="toast-message"></span>
+  <button class="toast-undo" id="toast-undo">Undo</button>
+</div>
+
+<!-- Add/Edit Person Modal -->
+<div class="modal-overlay" id="person-overlay">
+  <div class="modal">
+    <h2 id="person-modal-title">Add Person</h2>
+    <div class="form-group">
+      <label for="person-name">Name</label>
+      <input type="text" id="person-name" placeholder="e.g. Jane Smith" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="person-category">Category</label>
+      <select id="person-category">
+        <option value="Family">Family</option>
+        <option value="Friends" selected>Friends</option>
+        <option value="Work">Work</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="person-cancel">Cancel</button>
+      <button class="btn-save" id="person-save" disabled>Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Connection Modal -->
+<div class="modal-overlay" id="connect-overlay">
+  <div class="modal">
+    <h2 id="connect-modal-title">Log Connection</h2>
+    <div class="form-group">
+      <label>How did you connect?</label>
+      <div class="type-row" id="type-row">
+        <button class="type-btn" data-type="phone"><span class="type-emoji">📞</span>Phone</button>
+        <button class="type-btn" data-type="in-person"><span class="type-emoji">🤝</span>In-Person</button>
+        <button class="type-btn" data-type="text"><span class="type-emoji">💬</span>Text</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="connect-date">Date</label>
+      <input type="date" id="connect-date">
+    </div>
+    <div class="form-group">
+      <label for="connect-note">Note <span class="optional">(optional)</span></label>
+      <textarea id="connect-note" rows="3" placeholder="What did you talk about?"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="connect-cancel">Cancel</button>
+      <button class="btn-save" id="connect-save" disabled>Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const STORAGE_KEY = 'connectApp';
+  // Replace with your deployed Google Apps Script URL:
+  const SYNC_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+  const CATEGORIES = ['Family', 'Friends', 'Work', 'Other'];
+  const CAT_CLASS = { Family: 'cat-family', Friends: 'cat-friends', Work: 'cat-work', Other: 'cat-other' };
+  const CONNECT_TYPES = {
+    phone: { label: 'Phone', emoji: '📞' },
+    'in-person': { label: 'In-Person', emoji: '🤝' },
+    text: { label: 'Text', emoji: '💬' },
+  };
+
+  // ---- Data layer ----
+  function loadLocal() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      return JSON.parse(raw).people || [];
+    } catch { return []; }
+  }
+
+  function saveLocal(p) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ people: p }));
+  }
+
+  function syncToCloud(p) {
+    if (!SYNC_URL || SYNC_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') return;
+    setSyncStatus('syncing');
+    fetch(SYNC_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ people: p }) })
+      .then(r => {
+        if (r.ok || r.type === 'opaque' || r.redirected) { setSyncStatus('synced'); return; }
+        setSyncStatus('synced');
+      })
+      .catch(() => setSyncStatus('error'));
+  }
+
+  function syncFromCloud() {
+    if (!SYNC_URL || SYNC_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') return;
+    setSyncStatus('syncing');
+    fetch(SYNC_URL, { redirect: 'follow' })
+      .then(r => r.text())
+      .then(text => {
+        try {
+          const data = JSON.parse(text);
+          const cloud = data.people || [];
+          if (cloud.length > 0 || people.length === 0) {
+            people = cloud;
+            saveLocal(people);
+            render();
+          }
+          setSyncStatus('synced');
+        } catch { setSyncStatus('error'); }
+      })
+      .catch(() => setSyncStatus('error'));
+  }
+
+  function savePeople(p) {
+    saveLocal(p);
+    syncToCloud(p);
+  }
+
+  function setSyncStatus(s) {
+    const el = document.getElementById('sync-status');
+    el.className = 'sync-indicator ' + s;
+    el.textContent = s === 'syncing' ? 'Syncing…' : s === 'synced' ? 'Synced' : 'Offline';
+  }
+
+  function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  // ---- Time helpers ----
+  function timeAgo(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    const days = Math.floor(hrs / 24);
+    if (days < 30) return days + 'd ago';
+    const months = Math.floor(days / 30);
+    return months + 'mo ago';
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function daysSince(dateStr) {
+    return (Date.now() - new Date(dateStr).getTime()) / 86400000;
+  }
+
+  function statusColor(person) {
+    if (!person.connections || person.connections.length === 0) return 'red';
+    const days = daysSince(person.connections[0].date);
+    if (days <= 14) return 'green';
+    if (days <= 30) return 'yellow';
+    return 'red';
+  }
+
+  function todayValue() {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+
+  // ---- State ----
+  let people = loadLocal();
+  let activeFilter = 'All';
+  let expandedId = null;
+  let editingId = null;
+  let connectingId = null;
+  let selectedType = null;
+  let undoTimer = null;
+  let undoData = null;
+
+  // ---- DOM refs ----
+  const listEl = document.getElementById('people-list');
+  const filterBar = document.getElementById('filter-bar');
+  const statsBar = document.getElementById('stats-bar');
+  const fabEl = document.getElementById('fab-add');
+  const toastEl = document.getElementById('toast');
+  const toastMsg = document.getElementById('toast-message');
+  const toastUndo = document.getElementById('toast-undo');
+
+  // Person modal
+  const personOverlay = document.getElementById('person-overlay');
+  const personModalTitle = document.getElementById('person-modal-title');
+  const personNameInput = document.getElementById('person-name');
+  const personCategoryInput = document.getElementById('person-category');
+  const personCancelBtn = document.getElementById('person-cancel');
+  const personSaveBtn = document.getElementById('person-save');
+
+  // Connect modal
+  const connectOverlay = document.getElementById('connect-overlay');
+  const connectModalTitle = document.getElementById('connect-modal-title');
+  const connectDateInput = document.getElementById('connect-date');
+  const connectNoteInput = document.getElementById('connect-note');
+  const connectCancelBtn = document.getElementById('connect-cancel');
+  const connectSaveBtn = document.getElementById('connect-save');
+  const typeRow = document.getElementById('type-row');
+
+  // ---- Filter tabs ----
+  function renderFilters() {
+    const used = new Set(people.map(p => p.category));
+    const tabs = ['All'].concat(CATEGORIES.filter(c => used.has(c)));
+    filterBar.innerHTML = tabs.map(t =>
+      '<button class="filter-tab' + (activeFilter === t ? ' active' : '') + '" data-filter="' + t + '">' + t + '</button>'
+    ).join('');
+  }
+
+  filterBar.addEventListener('click', function (e) {
+    const tab = e.target.closest('.filter-tab');
+    if (!tab) return;
+    activeFilter = tab.dataset.filter;
+    render();
+  });
+
+  // ---- Stats ----
+  function calcStats() {
+    const now = Date.now();
+    const weekAgo = now - 7 * 86400000;
+    const monthAgo = now - 30 * 86400000;
+    let week = 0, month = 0, needAttention = 0;
+    people.forEach(p => {
+      const color = statusColor(p);
+      if (color === 'red') needAttention++;
+      if (p.connections && p.connections.length > 0) {
+        const last = new Date(p.connections[0].date).getTime();
+        if (last >= weekAgo) week++;
+        if (last >= monthAgo) month++;
+      }
+    });
+    return { week, month, needAttention };
+  }
+
+  // ---- Render ----
+  function render() {
+    renderFilters();
+
+    const filtered = activeFilter === 'All' ? people : people.filter(p => p.category === activeFilter);
+
+    // Stats bar
+    const stats = calcStats();
+    let statsHtml = '';
+    if (people.length > 0) {
+      statsHtml += '<div class="stat-chip"><strong>' + people.length + '</strong> people</div>';
+      statsHtml += '<div class="stat-chip">This week: <strong>' + stats.week + '</strong></div>';
+      statsHtml += '<div class="stat-chip">This month: <strong>' + stats.month + '</strong></div>';
+      if (stats.needAttention > 0) {
+        statsHtml += '<div class="stat-chip" style="color:#dc2626">Need attention: <strong style="color:#dc2626">' + stats.needAttention + '</strong></div>';
+      }
+    }
+    statsBar.innerHTML = statsHtml;
+
+    if (filtered.length === 0) {
+      if (people.length === 0) {
+        listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🫂</div><p>No people yet</p><p class="hint">Tap + to add your first person</p></div>';
+      } else {
+        listEl.innerHTML = '<div class="empty-state"><p>No one in ' + escapeHtml(activeFilter) + '</p></div>';
+      }
+      return;
+    }
+
+    // Sort: red first, then yellow, then green; within groups alphabetically
+    const colorOrder = { red: 0, yellow: 1, green: 2 };
+    const sorted = [...filtered].sort((a, b) => {
+      const ca = colorOrder[statusColor(a)];
+      const cb = colorOrder[statusColor(b)];
+      if (ca !== cb) return ca - cb;
+      return a.name.localeCompare(b.name);
+    });
+
+    listEl.innerHTML = sorted.map(p => renderPersonCard(p)).join('');
+  }
+
+  function renderPersonCard(person) {
+    const color = statusColor(person);
+    const isExpanded = expandedId === person.id;
+
+    const lastConn = person.connections && person.connections.length > 0 ? person.connections[0] : null;
+    const lastMeta = lastConn
+      ? CONNECT_TYPES[lastConn.type].emoji + ' ' + timeAgo(lastConn.date)
+      : '<span class="overdue">Never connected</span>';
+
+    const catClass = CAT_CLASS[person.category] || 'cat-other';
+
+    let detailHtml = '';
+    if (isExpanded) {
+      const conns = person.connections || [];
+      let histHtml = '';
+      if (conns.length === 0) {
+        histHtml = '<p class="no-history">No connections recorded yet</p>';
+      } else {
+        histHtml = '<ul class="history-list">' + conns.map((c, i) => {
+          const typeInfo = CONNECT_TYPES[c.type] || { emoji: '•', label: c.type };
+          return '<li class="history-item">' +
+            '<div class="history-emoji">' + typeInfo.emoji + '</div>' +
+            '<div class="history-info">' +
+              '<div class="history-date">' + formatDate(c.date) + ' &middot; ' + timeAgo(c.date) + '</div>' +
+              (c.note ? '<div class="history-note-text">' + escapeHtml(c.note) + '</div>' : '') +
+            '</div>' +
+            '<button class="history-delete" data-person-id="' + person.id + '" data-conn-index="' + i + '" aria-label="Delete">&times;</button>' +
+          '</li>';
+        }).join('') + '</ul>';
+      }
+
+      detailHtml = '<div class="person-detail open">' +
+        '<div class="detail-actions">' +
+          '<button class="detail-btn" data-action="edit" data-id="' + person.id + '">Edit</button>' +
+          '<button class="detail-btn danger" data-action="delete" data-id="' + person.id + '">Delete</button>' +
+        '</div>' +
+        '<p class="detail-section-label">Notes</p>' +
+        '<textarea class="notes-area" data-person-id="' + person.id + '" placeholder="Add notes about this person…">' + escapeHtml(person.notes || '') + '</textarea>' +
+        '<p class="notes-saved" id="notes-saved-' + person.id + '">Saved</p>' +
+        '<p class="detail-section-label">Connection History</p>' +
+        histHtml +
+      '</div>';
+    }
+
+    return '<div class="person-card" data-id="' + person.id + '">' +
+      '<div class="person-row" data-id="' + person.id + '">' +
+        '<div class="status-dot ' + color + '"></div>' +
+        '<div class="person-info">' +
+          '<div class="person-name">' + escapeHtml(person.name) + '</div>' +
+          '<div class="person-meta">' + lastMeta + '</div>' +
+          '<div class="person-badges"><span class="cat-badge ' + catClass + '">' + escapeHtml(person.category) + '</span></div>' +
+        '</div>' +
+        '<button class="connect-btn" data-connect-id="' + person.id + '">Connect</button>' +
+      '</div>' +
+      detailHtml +
+    '</div>';
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str || '';
+    return div.innerHTML;
+  }
+
+  // ---- Notes auto-save ----
+  listEl.addEventListener('blur', function (e) {
+    if (!e.target.classList.contains('notes-area')) return;
+    const personId = e.target.dataset.personId;
+    const person = people.find(p => p.id === personId);
+    if (!person) return;
+    person.notes = e.target.value;
+    savePeople(people);
+    const indicator = document.getElementById('notes-saved-' + personId);
+    if (indicator) {
+      indicator.classList.add('show');
+      setTimeout(() => indicator.classList.remove('show'), 2000);
+    }
+  }, true);
+
+  // ---- List click handler ----
+  listEl.addEventListener('click', function (e) {
+    // Connect button
+    const connectBtn = e.target.closest('[data-connect-id]');
+    if (connectBtn) {
+      e.stopPropagation();
+      openConnectModal(connectBtn.dataset.connectId);
+      connectBtn.classList.remove('flash');
+      void connectBtn.offsetWidth;
+      connectBtn.classList.add('flash');
+      return;
+    }
+
+    // History delete
+    const histDel = e.target.closest('.history-delete');
+    if (histDel) {
+      e.stopPropagation();
+      deleteConnection(histDel.dataset.personId, parseInt(histDel.dataset.connIndex, 10));
+      return;
+    }
+
+    // Detail action buttons (edit / delete person)
+    const actionBtn = e.target.closest('[data-action]');
+    if (actionBtn) {
+      e.stopPropagation();
+      if (actionBtn.dataset.action === 'edit') {
+        openEditPersonModal(actionBtn.dataset.id);
+      } else if (actionBtn.dataset.action === 'delete') {
+        if (confirm('Remove ' + (people.find(p => p.id === actionBtn.dataset.id) || {}).name + ' from Connect?')) {
+          deletePerson(actionBtn.dataset.id);
+        }
+      }
+      return;
+    }
+
+    // Expand/collapse card
+    const row = e.target.closest('.person-row');
+    if (row) {
+      expandedId = expandedId === row.dataset.id ? null : row.dataset.id;
+      render();
+    }
+  });
+
+  // ---- Add/Edit Person Modal ----
+  fabEl.addEventListener('click', openAddPersonModal);
+  personCancelBtn.addEventListener('click', closePersonModal);
+  personOverlay.addEventListener('click', function (e) { if (e.target === personOverlay) closePersonModal(); });
+
+  personNameInput.addEventListener('input', function () {
+    personSaveBtn.disabled = !personNameInput.value.trim();
+  });
+
+  personSaveBtn.addEventListener('click', function () {
+    const name = personNameInput.value.trim();
+    const category = personCategoryInput.value;
+    if (!name) return;
+
+    if (editingId) {
+      const person = people.find(p => p.id === editingId);
+      if (person) { person.name = name; person.category = category; }
+    } else {
+      people.push({
+        id: generateId(),
+        name,
+        category,
+        notes: '',
+        connections: [],
+        createdAt: new Date().toISOString(),
+      });
+    }
+    savePeople(people);
+    closePersonModal();
+    render();
+  });
+
+  function openAddPersonModal() {
+    editingId = null;
+    personModalTitle.textContent = 'Add Person';
+    personNameInput.value = '';
+    personCategoryInput.value = 'Friends';
+    personSaveBtn.disabled = true;
+    personSaveBtn.textContent = 'Add';
+    personOverlay.classList.add('open');
+    setTimeout(() => personNameInput.focus(), 100);
+  }
+
+  function openEditPersonModal(id) {
+    const person = people.find(p => p.id === id);
+    if (!person) return;
+    editingId = id;
+    personModalTitle.textContent = 'Edit Person';
+    personNameInput.value = person.name;
+    personCategoryInput.value = person.category || 'Friends';
+    personSaveBtn.disabled = false;
+    personSaveBtn.textContent = 'Save';
+    personOverlay.classList.add('open');
+    setTimeout(() => personNameInput.focus(), 100);
+  }
+
+  function closePersonModal() {
+    personOverlay.classList.remove('open');
+    editingId = null;
+  }
+
+  // ---- Connect Modal ----
+  connectCancelBtn.addEventListener('click', closeConnectModal);
+  connectOverlay.addEventListener('click', function (e) { if (e.target === connectOverlay) closeConnectModal(); });
+
+  typeRow.addEventListener('click', function (e) {
+    const btn = e.target.closest('.type-btn');
+    if (!btn) return;
+    selectedType = btn.dataset.type;
+    typeRow.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    connectSaveBtn.disabled = false;
+  });
+
+  connectSaveBtn.addEventListener('click', function () {
+    if (!connectingId || !selectedType) return;
+    const dateVal = connectDateInput.value;
+    const note = connectNoteInput.value.trim();
+
+    // Store as noon local time to avoid UTC date shifting
+    const date = new Date(dateVal + 'T12:00:00').toISOString();
+
+    const person = people.find(p => p.id === connectingId);
+    if (!person) return;
+
+    if (!person.connections) person.connections = [];
+    const conn = { id: generateId(), date, type: selectedType, note };
+    person.connections.unshift(conn);
+
+    // Sort connections by date descending (in case user picked a past date)
+    person.connections.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    savePeople(people);
+
+    const typeInfo = CONNECT_TYPES[selectedType];
+    showToast(typeInfo.emoji + ' Connected with ' + person.name, function () {
+      const p = people.find(x => x.id === connectingId);
+      if (p && p.connections) {
+        const idx = p.connections.findIndex(c => c.id === conn.id);
+        if (idx !== -1) {
+          p.connections.splice(idx, 1);
+          savePeople(people);
+          render();
+        }
+      }
+    });
+
+    closeConnectModal();
+    render();
+  });
+
+  function openConnectModal(id) {
+    connectingId = id;
+    selectedType = null;
+    const person = people.find(p => p.id === id);
+    connectModalTitle.textContent = 'Connect with ' + (person ? person.name : '');
+    connectDateInput.value = todayValue();
+    connectNoteInput.value = '';
+    connectSaveBtn.disabled = true;
+    typeRow.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+    connectOverlay.classList.add('open');
+  }
+
+  function closeConnectModal() {
+    connectOverlay.classList.remove('open');
+    connectingId = null;
+    selectedType = null;
+  }
+
+  // ---- Delete actions ----
+  function deletePerson(id) {
+    people = people.filter(p => p.id !== id);
+    expandedId = null;
+    savePeople(people);
+    render();
+  }
+
+  function deleteConnection(personId, index) {
+    const person = people.find(p => p.id === personId);
+    if (!person || !person.connections) return;
+    person.connections.splice(index, 1);
+    savePeople(people);
+    render();
+  }
+
+  // ---- Toast ----
+  function showToast(message, onUndo) {
+    if (undoTimer) clearTimeout(undoTimer);
+    toastMsg.textContent = message;
+    undoData = onUndo;
+    toastEl.classList.add('visible');
+    undoTimer = setTimeout(hideToast, 4000);
+  }
+
+  function hideToast() {
+    toastEl.classList.remove('visible');
+    undoData = null;
+    if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+  }
+
+  toastUndo.addEventListener('click', function () {
+    if (undoData) undoData();
+    hideToast();
+  });
+
+  // ---- Keyboard ----
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (connectOverlay.classList.contains('open')) closeConnectModal();
+      else if (personOverlay.classList.contains('open')) closePersonModal();
+    }
+  });
+
+  // ---- Init ----
+  render();
+  syncFromCloud();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+})();
+</script>
+</body>
+</html>
