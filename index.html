@@ -567,9 +567,69 @@
   }
   .btn-save:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
+  /* Search bar */
+  .search-bar {
+    padding: 10px 16px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+  }
+  .search-wrap { position: relative; display: flex; align-items: center; }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    pointer-events: none;
+  }
+  .search-input {
+    width: 100%;
+    padding: 10px 36px 10px 36px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .search-clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    display: none;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .search-clear.visible { display: block; }
+
+  /* Birthday badge */
+  .bday-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(251, 191, 36, 0.15);
+    color: #b45309;
+    display: inline-block;
+  }
+  .bday-badge.urgent {
+    background: rgba(251, 191, 36, 0.35);
+    color: #92400e;
+  }
+
   @media (min-width: 600px) {
     #people-list { max-width: 540px; margin: 0 auto; padding: 16px; padding-bottom: 100px; }
-    .stats-bar { max-width: 564px; margin-left: auto; margin-right: auto; }
+    .search-bar, .stats-bar { max-width: 564px; margin-left: auto; margin-right: auto; }
     .modal { border-radius: 20px; margin-bottom: 40px; }
     .modal-overlay { align-items: center; }
   }
@@ -587,6 +647,14 @@
   </div>
   <div class="filter-bar" id="filter-bar"></div>
 </header>
+
+<div class="search-bar">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" class="search-input" id="search-input" placeholder="Search people…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="search-clear" id="search-clear" aria-label="Clear search">&times;</button>
+  </div>
+</div>
 
 <div class="stats-bar" id="stats-bar"></div>
 
@@ -615,6 +683,10 @@
         <option value="Work">Work</option>
         <option value="Other">Other</option>
       </select>
+    </div>
+    <div class="form-group">
+      <label for="person-birthday">Birthday <span class="optional">(optional)</span></label>
+      <input type="date" id="person-birthday">
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="person-cancel">Cancel</button>
@@ -763,9 +835,50 @@
     return d.getFullYear() + '-' + mm + '-' + dd;
   }
 
+  // ---- Birthday helpers ----
+  function birthdayInfo(birthday) {
+    if (!birthday) return null;
+    const parts = birthday.split('-');
+    // Support both YYYY-MM-DD (date input) and MM-DD storage
+    const month = parseInt(parts.length === 3 ? parts[1] : parts[0], 10);
+    const day   = parseInt(parts.length === 3 ? parts[2] : parts[1], 10);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let bday = new Date(today.getFullYear(), month - 1, day);
+    if (bday < today) bday = new Date(today.getFullYear() + 1, month - 1, day);
+    const diff = Math.round((bday - today) / 86400000);
+    if (diff === 0) return { label: '🎂 Today!', urgent: true };
+    if (diff <= 7)  return { label: '🎂 in ' + diff + 'd', urgent: true };
+    if (diff <= 30) return { label: '🎂 in ' + diff + 'd', urgent: false };
+    return null;
+  }
+
+  function formatBirthday(birthday) {
+    if (!birthday) return '';
+    const parts = birthday.split('-');
+    const month = parseInt(parts.length === 3 ? parts[1] : parts[0], 10);
+    const day   = parseInt(parts.length === 3 ? parts[2] : parts[1], 10);
+    return new Date(2000, month - 1, day).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+  }
+
+  // Store birthday as MM-DD (year-agnostic)
+  function normalizeBirthday(val) {
+    if (!val) return '';
+    const parts = val.split('-');
+    if (parts.length === 3) return parts[1] + '-' + parts[2]; // YYYY-MM-DD → MM-DD
+    return val; // already MM-DD
+  }
+
+  // Convert MM-DD back to YYYY-MM-DD for the date input (use 2000 as dummy year)
+  function birthdayToInputVal(mmdd) {
+    if (!mmdd) return '';
+    return '2000-' + mmdd;
+  }
+
   // ---- State ----
   let people = loadLocal();
   let activeFilter = 'All';
+  let searchQuery = '';
   let expandedId = null;
   let editingId = null;
   let connectingId = null;
@@ -776,6 +889,8 @@
   // ---- DOM refs ----
   const listEl = document.getElementById('people-list');
   const filterBar = document.getElementById('filter-bar');
+  const searchInput = document.getElementById('search-input');
+  const searchClear = document.getElementById('search-clear');
   const statsBar = document.getElementById('stats-bar');
   const fabEl = document.getElementById('fab-add');
   const toastEl = document.getElementById('toast');
@@ -787,6 +902,7 @@
   const personModalTitle = document.getElementById('person-modal-title');
   const personNameInput = document.getElementById('person-name');
   const personCategoryInput = document.getElementById('person-category');
+  const personBirthdayInput = document.getElementById('person-birthday');
   const personCancelBtn = document.getElementById('person-cancel');
   const personSaveBtn = document.getElementById('person-save');
 
@@ -820,7 +936,7 @@
     const now = Date.now();
     const weekAgo = now - 7 * 86400000;
     const monthAgo = now - 30 * 86400000;
-    let week = 0, month = 0, needAttention = 0;
+    let week = 0, month = 0, needAttention = 0, upcomingBdays = 0;
     people.forEach(p => {
       const color = statusColor(p);
       if (color === 'red') needAttention++;
@@ -829,15 +945,20 @@
         if (last >= weekAgo) week++;
         if (last >= monthAgo) month++;
       }
+      if (birthdayInfo(p.birthday)) upcomingBdays++;
     });
-    return { week, month, needAttention };
+    return { week, month, needAttention, upcomingBdays };
   }
 
   // ---- Render ----
   function render() {
     renderFilters();
 
-    const filtered = activeFilter === 'All' ? people : people.filter(p => p.category === activeFilter);
+    let filtered = activeFilter === 'All' ? people : people.filter(p => p.category === activeFilter);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
+    }
 
     // Stats bar
     const stats = calcStats();
@@ -846,6 +967,9 @@
       statsHtml += '<div class="stat-chip"><strong>' + people.length + '</strong> people</div>';
       statsHtml += '<div class="stat-chip">This week: <strong>' + stats.week + '</strong></div>';
       statsHtml += '<div class="stat-chip">This month: <strong>' + stats.month + '</strong></div>';
+      if (stats.upcomingBdays > 0) {
+        statsHtml += '<div class="stat-chip">🎂 <strong>' + stats.upcomingBdays + '</strong> upcoming</div>';
+      }
       if (stats.needAttention > 0) {
         statsHtml += '<div class="stat-chip" style="color:#dc2626">Need attention: <strong style="color:#dc2626">' + stats.needAttention + '</strong></div>';
       }
@@ -883,6 +1007,7 @@
       : '<span class="overdue">Never connected</span>';
 
     const catClass = CAT_CLASS[person.category] || 'cat-other';
+    const bday = birthdayInfo(person.birthday);
 
     let detailHtml = '';
     if (isExpanded) {
@@ -909,6 +1034,7 @@
           '<button class="detail-btn" data-action="edit" data-id="' + person.id + '">Edit</button>' +
           '<button class="detail-btn danger" data-action="delete" data-id="' + person.id + '">Delete</button>' +
         '</div>' +
+        (person.birthday ? '<p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">🎂 ' + formatBirthday(person.birthday) + '</p>' : '') +
         '<p class="detail-section-label">Notes</p>' +
         '<textarea class="notes-area" data-person-id="' + person.id + '" placeholder="Add notes about this person…">' + escapeHtml(person.notes || '') + '</textarea>' +
         '<p class="notes-saved" id="notes-saved-' + person.id + '">Saved</p>' +
@@ -923,7 +1049,10 @@
         '<div class="person-info">' +
           '<div class="person-name">' + escapeHtml(person.name) + '</div>' +
           '<div class="person-meta">' + lastMeta + '</div>' +
-          '<div class="person-badges"><span class="cat-badge ' + catClass + '">' + escapeHtml(person.category) + '</span></div>' +
+          '<div class="person-badges">' +
+            '<span class="cat-badge ' + catClass + '">' + escapeHtml(person.category) + '</span>' +
+            (bday ? '<span class="bday-badge' + (bday.urgent ? ' urgent' : '') + '">' + bday.label + '</span>' : '') +
+          '</div>' +
         '</div>' +
         '<button class="connect-btn" data-connect-id="' + person.id + '">Connect</button>' +
       '</div>' +
@@ -1009,14 +1138,16 @@
     const category = personCategoryInput.value;
     if (!name) return;
 
+    const birthday = normalizeBirthday(personBirthdayInput.value);
     if (editingId) {
       const person = people.find(p => p.id === editingId);
-      if (person) { person.name = name; person.category = category; }
+      if (person) { person.name = name; person.category = category; person.birthday = birthday; }
     } else {
       people.push({
         id: generateId(),
         name,
         category,
+        birthday,
         notes: '',
         connections: [],
         createdAt: new Date().toISOString(),
@@ -1032,6 +1163,7 @@
     personModalTitle.textContent = 'Add Person';
     personNameInput.value = '';
     personCategoryInput.value = 'Friends';
+    personBirthdayInput.value = '';
     personSaveBtn.disabled = true;
     personSaveBtn.textContent = 'Add';
     personOverlay.classList.add('open');
@@ -1045,6 +1177,7 @@
     personModalTitle.textContent = 'Edit Person';
     personNameInput.value = person.name;
     personCategoryInput.value = person.category || 'Friends';
+    personBirthdayInput.value = birthdayToInputVal(person.birthday || '');
     personSaveBtn.disabled = false;
     personSaveBtn.textContent = 'Save';
     personOverlay.classList.add('open');
@@ -1158,6 +1291,22 @@
   toastUndo.addEventListener('click', function () {
     if (undoData) undoData();
     hideToast();
+  });
+
+  // ---- Search ----
+  searchInput.addEventListener('input', function () {
+    searchQuery = searchInput.value.trim();
+    searchClear.classList.toggle('visible', searchQuery.length > 0);
+    expandedId = null;
+    render();
+  });
+
+  searchClear.addEventListener('click', function () {
+    searchInput.value = '';
+    searchQuery = '';
+    searchClear.classList.remove('visible');
+    searchInput.focus();
+    render();
   });
 
   // ---- Keyboard ----
