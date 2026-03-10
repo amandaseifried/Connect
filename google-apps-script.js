@@ -1,26 +1,35 @@
 // ============================================================
 // Connect App — Google Apps Script Backend
+// (lives in your existing Tidy Google Sheet)
 // ============================================================
 // How to deploy:
 //
-// 1. Go to https://sheets.google.com and create a new spreadsheet.
-// 2. Rename the first sheet (tab at the bottom) to: Data
-// 3. In the spreadsheet, go to Extensions → Apps Script.
-// 4. Delete the default code and paste ALL of this file's code.
-// 5. Click Save (floppy disk icon).
-// 6. Click Deploy → New deployment.
-//    - Type: Web app
+// 1. Open your existing Tidy Google Sheet.
+// 2. At the bottom, click the + to add a new tab.
+//    Name it exactly: ConnectData
+// 3. Copy the spreadsheet ID from the URL bar —
+//    it's the long string between /d/ and /edit:
+//    docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
+// 4. Paste your spreadsheet ID below where it says YOUR_SPREADSHEET_ID.
+// 5. Go to https://script.google.com → click "New project".
+//    (Do NOT use Extensions → Apps Script from the Tidy sheet,
+//     as that would share the Tidy script.)
+// 6. Delete the default code and paste ALL of this file's code.
+// 7. Click Save (floppy disk icon).
+// 8. Click Deploy → New deployment.
+//    - Click the gear icon next to Type → select Web app
 //    - Execute as: Me
 //    - Who has access: Anyone
-// 7. Click Deploy, authorize the permissions when prompted.
-// 8. Copy the Web app URL shown after deployment.
-// 9. Open connect/index.html and replace:
-//      const SYNC_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
-//    with your copied URL.
+// 9. Click Deploy, authorize the permissions when prompted.
+// 10. Copy the Web app URL shown after deployment.
+// 11. Paste that URL here as the SYNC_URL in connect/index.html.
 // ============================================================
 
+var SPREADSHEET_ID = '1WWXRJQU6rvKjgEr-XymbqxThv_GHfuKbkS8tuB7KfPs';
+var SHEET_NAME = 'ConnectData';
+
 function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Data');
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
   var raw = sheet.getRange('A1').getValue();
   var data;
   try {
@@ -34,7 +43,7 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Data');
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
   try {
     var data = JSON.parse(e.postData.contents);
     sheet.getRange('A1').setValue(JSON.stringify(data));
