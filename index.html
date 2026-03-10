@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0d9488">
+<meta name="theme-color" content="#c2607a">
 <title>Connect</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫂</text></svg>">
 <link rel="manifest" href="manifest.json">
@@ -16,20 +16,20 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --accent: #0d9488;
-    --accent-light: #2dd4bf;
-    --accent-glow: rgba(13, 148, 136, 0.22);
+    --accent: #c2607a;
+    --accent-light: #e8899a;
+    --accent-glow: rgba(194, 96, 122, 0.2);
     --green: #34d399;
     --green-dark: #059669;
     --yellow: #fbbf24;
     --yellow-dark: #b45309;
     --red: #f87171;
     --red-dark: #dc2626;
-    --bg: #f8fffe;
+    --bg: #fdf5f7;
     --card: #ffffff;
-    --text: #134e4a;
-    --text-secondary: #6b7280;
-    --border: #d1fae5;
+    --text: #3b1520;
+    --text-secondary: #8a6470;
+    --border: #f5d0d9;
     --fab-size: 58px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -48,7 +48,7 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    background: linear-gradient(135deg, #0d9488 0%, #0ea5a0 45%, #2dd4bf 100%);
+    background: linear-gradient(135deg, #b5506a 0%, #c2607a 45%, #e8899a 100%);
     padding: 20px 20px 0;
     padding-top: calc(20px + env(safe-area-inset-top, 0px));
     color: white;
@@ -173,7 +173,7 @@
     -webkit-tap-highlight-color: transparent;
     min-height: 72px;
   }
-  .person-row:active { background: #f0fdf9; }
+  .person-row:active { background: #fceef1; }
 
   .status-dot {
     width: 10px;
@@ -254,7 +254,7 @@
     display: none;
     border-top: 1px solid var(--border);
     padding: 16px;
-    background: #f0fdfb;
+    background: #fef0f3;
   }
   .person-detail.open { display: block; }
 
@@ -425,7 +425,7 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(13, 60, 56, 0.4);
+    background: rgba(59, 21, 32, 0.35);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     z-index: 100;
